@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Lecture Planner</title>
+<meta name="theme-color" content="#0f172a">
+<style>
+:root{
+  --bg:#f5f7fb; --card:#ffffff; --text:#172033; --muted:#6b7280; --line:#e5eaf2;
+  --navy:#0f172a; --blue:#2563eb; --blue2:#60a5fa; --green:#16a34a;
+  --amber:#d97706; --red:#dc2626; --soft:#eef4ff; --soft2:#f8fafc;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; color:var(--text);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  background:linear-gradient(180deg,#eaf1ff 0,#f7f9fc 300px,#f5f7fb 100%);
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.container{max-width:1180px;margin:auto;padding:18px}
+.hero{
+  position:relative; overflow:hidden;
+  border-radius:24px; padding:25px; color:#fff;
+  background:linear-gradient(135deg,#0f172a 0%,#172554 55%,#1e40af 100%);
+  box-shadow:0 16px 42px rgba(15,23,42,.18);
+  animation:rise .55s ease both;
+}
+.hero:after{
+  content:""; position:absolute; width:210px;height:210px;border-radius:50%;
+  right:-70px;top:-90px;background:rgba(255,255,255,.08);pointer-events:none;
+}
+.hero-row{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;position:relative;z-index:1}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:#bfdbfe}
+.hero h1{margin:7px 0 6px;font-size:31px;line-height:1.08}
+.hero p{margin:0;color:#cbd5e1;font-size:14px;max-width:650px;line-height:1.5}
+.hero-target{
+  min-width:210px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;padding:12px 14px
+}
+.hero-target label{font-size:11px;color:#cbd5e1;display:block;margin-bottom:5px}
+.hero-target input{width:100%;border:0;border-radius:9px;padding:9px 10px;font-size:14px;color:#0f172a;background:#fff}
+
+.top-settings{
+  display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;margin-top:12px
+}
+.top-field{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:10px;border-radius:14px}
+.top-field label{display:block;font-size:10px;color:#cbd5e1;margin-bottom:5px}
+.top-field input,.top-field select{
+  width:100%;border:0;border-radius:8px;padding:9px 10px;color:#0f172a;background:#fff;min-height:40px
+}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:16px 0}
+.stat{
+  background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:17px;padding:15px;
+  box-shadow:0 7px 20px rgba(15,23,42,.045);animation:rise .5s ease both;
+}
+.stat span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.stat strong{font-size:23px;line-height:1.1}
+.stat small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.stat.pop{animation:pop .28s ease}
+
+.panel{
+  background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:19px;padding:17px;
+  box-shadow:0 8px 22px rgba(15,23,42,.045);margin-top:12px;animation:rise .48s ease both;
+}
+.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.panel-head h2{font-size:19px;margin:0}.panel-head p{font-size:12px;color:var(--muted);margin:4px 0 0}
+.badge{padding:7px 10px;border-radius:999px;background:var(--soft);color:#1d4ed8;font-size:11px;font-weight:800;white-space:nowrap}
+.btn{border:0;border-radius:10px;padding:10px 12px;font-weight:800;font-size:12px;min-height:40px}
+.btn-primary{background:#2563eb;color:#fff}.btn-soft{background:#eef2f7;color:#334155}.btn-danger{background:#fff1f2;color:#be123c}
+.btn-add{background:#e8f0ff;color:#1d4ed8}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.subjects{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.subject{
+  border:1px solid var(--line);border-radius:16px;padding:13px;background:#fff;position:relative;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease
+}
+@media(hover:hover) and (pointer:fine){
+  .subject:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(15,23,42,.07);border-color:#d7e2f2}
+}
+.subject-top{display:grid;grid-template-columns:1fr 1.2fr auto;gap:8px;align-items:end}
+.field label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;font-weight:700}
+.field input,.field select{
+  width:100%;border:1px solid #d8e0ec;border-radius:9px;padding:9px 10px;min-height:40px;font-size:14px;color:var(--text);background:#fff;outline:none
+}
+.field input:focus,.field select:focus{border-color:#8fb1ff;box-shadow:0 0 0 3px #e9f0ff}
+.remove{border:0;background:#fff1f2;color:#be123c;border-radius:9px;width:40px;height:40px;font-size:17px}
+.subject-numbers{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:9px}
+.progress{height:8px;background:#edf1f7;border-radius:999px;overflow:hidden;margin-top:11px}
+.progress>div{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:999px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.subject-foot{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--muted);font-size:11px}
+.subject-foot strong{color:#334155}
+
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
+table{width:100%;border-collapse:collapse;background:#fff;min-width:760px}
+th,td{padding:10px 9px;border-bottom:1px solid #eef1f5;text-align:center;font-size:12px}
+th{background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;z-index:1}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .18s ease}
+@media(hover:hover) and (pointer:fine){tbody tr:hover{background:#f8fbff}}
+.total-cell{font-weight:900}.muted{color:var(--muted)}
+.plan-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:10px;margin-top:10px}
+.callout{border-radius:14px;padding:13px;background:#eff6ff;border:1px solid #dbeafe;font-size:12px;line-height:1.55;color:#29405f}
+.callout strong{color:#172033}
+.focus{border-radius:14px;padding:13px;background:#f8fafc;border:1px solid var(--line)}
+.focus h3{font-size:13px;margin:0 0 8px}.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid #dfe6f1;background:#fff;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:800}
+
+.suggestions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.tip{border:1px solid var(--line);border-radius:14px;padding:13px;background:#fff;min-width:0}
+.tip .kicker{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.tip strong{display:block;font-size:16px;margin:5px 0 4px}.tip p{margin:0;color:var(--muted);font-size:11px;line-height:1.45}
+
+.speed-table{margin-top:10px}
+.speed-row{display:grid;grid-template-columns:70px 1fr 90px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f5;font-size:11px}
+.speed-row:last-child{border-bottom:0}
+.speed-bar{height:7px;background:#edf1f7;border-radius:99px;overflow:hidden}
+.speed-bar div{height:100%;background:#94a3b8;border-radius:99px;transition:width .4s ease}
+.speed-row.current .speed-bar div{background:#2563eb}.speed-row.current{font-weight:800;color:#1d4ed8}
+
+.save-toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;padding:10px 13px;border-radius:10px;font-size:11px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s ease;z-index:20}
+.save-toast.show{opacity:1;transform:translateY(0)}
+.footer{text-align:center;color:var(--muted);font-size:10px;padding:16px 0 4px}
+.empty{padding:18px;text-align:center;color:var(--muted);font-size:12px}
+.complete-banner{display:none;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;border-radius:14px;padding:13px;margin-bottom:10px;font-weight:800;font-size:12px}
+.complete-banner.show{display:block;animation:pop .35s ease}
+
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.98)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+@media(max-width:980px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .suggestions{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .hero-row{display:block}.hero-target{margin-top:13px;min-width:0}
+  .top-settings{grid-template-columns:1fr}
+  .subjects{grid-template-columns:1fr}
+  .subject-top{grid-template-columns:1fr 1fr auto}
+  .subject-numbers{grid-template-columns:1fr 1fr}
+  .plan-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .suggestions{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .container{padding:11px}.hero{padding:18px;border-radius:19px}.hero h1{font-size:25px}
+  .subject-top{grid-template-columns:1fr}.remove{width:100%}
+  .stats{gap:7px}.stat{padding:12px}.stat strong{font-size:20px}
+  .panel{padding:12px}
+}
+
+.print-sheet{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff!important;color:#111!important}
+  .container,.save-toast{display:none!important}
+  .print-sheet{display:block!important;font-family:Arial,Helvetica,sans-serif;color:#111}
+  .print-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}
+  .print-head h1{font-size:22px;margin:0 0 4px}
+  .print-head p{margin:0;font-size:10px;color:#444}
+  .print-meta{font-size:10px;line-height:1.5;text-align:right}
+  .print-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 10px}
+  .print-stat{border:1px solid #bbb;padding:7px;border-radius:5px}
+  .print-stat small{display:block;font-size:8px;color:#555;margin-bottom:2px}
+  .print-stat strong{font-size:14px}
+  .print-section{margin-top:10px;break-inside:avoid}
+  .print-section h2{font-size:13px;margin:0 0 5px}
+  .print-table{width:100%;border-collapse:collapse;font-size:8px}
+  .print-table th,.print-table td{border:1px solid #bbb;padding:4px;text-align:center}
+  .print-table th:first-child,.print-table td:first-child{text-align:left}
+  .print-table th{background:#f2f2f2}
+  .print-note{font-size:8px;color:#444;margin-top:6px}
+  .print-footer{text-align:center;font-size:7px;color:#666;margin-top:8px}
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <section class="hero">
+    <div class="hero-row">
+      <div>
+        <div class="eyebrow">Smart Study Planner</div>
+        <h1 id="heroTitle">CA Lecture Planner</h1>
+        <p>Customise your subjects, faculty, lecture counts, durations and target date. The complete plan updates instantly.</p>
+      </div>
+      <div class="hero-target">
+        <label>Target lecture completion date</label>
+        <input id="targetDate" type="date">
+      </div>
+    </div>
+    <div class="top-settings">
+      <div class="top-field">
+        <label>Student name</label>
+        <input id="studentName" type="text" placeholder="Enter your name">
+      </div>
+      <div class="top-field">
+        <label>Preferred playback speed</label>
+        <select id="playbackSpeed">
+          <option value="1.1">1.1×</option>
+          <option value="1.2">1.2×</option>
+          <option value="1.3">1.3×</option>
+          <option value="1.4">1.4×</option>
+          <option value="1.5">1.5×</option>
+          <option value="1.6">1.6×</option>
+          <option value="1.7">1.7×</option>
+          <option value="1.8">1.8×</option>
+          <option value="1.9">1.9×</option>
+          <option value="2.0">2.0×</option>
+        </select>
+      </div>
+      <div class="top-field">
+        <label>Safety buffer after target (days)</label>
+        <input id="bufferDays" type="number" min="0" max="60" step="1" value="7">
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><span>Completed</span><strong id="completedStat">0/0</strong><small id="completedPct">0% overall</small></div>
+    <div class="stat"><span>Remaining</span><strong id="remainingStat">0</strong><small>lectures left</small></div>
+    <div class="stat"><span>Daily pace</span><strong id="dailyStat">0</strong><small>to hit target date</small></div>
+    <div class="stat"><span>Weekly pace</span><strong id="weeklyStat">0</strong><small>to hit target date</small></div>
+    <div class="stat"><span>Watch time/day</span><strong id="watchStat">0h</strong><small id="speedSmall">at selected speed</small></div>
+  </section>
+
+  <div class="complete-banner" id="completeBanner">🎉 All lectures are complete. Move into revision, question practice, RTP/MTP and tests.</div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Subjects & Lectures</h2><p>Everything here is editable. Add or remove subjects whenever required.</p></div>
+      <div class="actions"><button class="btn btn-add" id="addSubjectBtn" type="button">+ Add subject</button></div>
+    </div>
+    <div class="subjects" id="subjects"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Next 7-Day Target</h2><p>Your immediate subject-wise target to stay on track for the main completion date.</p></div>
+      <div class="badge" id="daysBadge">— days left</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Subject</th><th>Faculty</th><th>Current</th><th>Remaining</th><th>Avg duration</th><th>Next 7 days</th></tr></thead>
+        <tbody id="nextWeekTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Week-by-Week Planner</h2><p>The main plan finishes by your target date. Buffer days are shown separately for catch-up.</p></div>
+      <div class="badge">Auto planner</div>
+    </div>
+    <div class="table-wrap"><table id="weeklyTable"></table></div>
+    <div class="plan-grid">
+      <div class="callout" id="planMessage"></div>
+      <div class="focus"><h3>Priority subjects now</h3><div class="chips" id="priorityChips"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Finish Faster Suggestions</h2><p>Based only on your current lecture load and target. Choose a pace you can sustain.</p></div>
+      <div class="badge">Smart suggestions</div>
+    </div>
+    <div class="suggestions" id="suggestions"></div>
+    <div class="speed-table" id="speedTable"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>Backup</h2><p>This simple version saves separately on each device.</p></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="printBtn" type="button">Print / Save PDF</button>
+        <button class="btn btn-soft" id="exportBtn" type="button">Export progress</button>
+        <button class="btn btn-soft" id="restoreBtn" type="button">Restore progress</button>
+        <button class="btn btn-danger" id="resetBtn" type="button">Reset</button>
+        <input id="restoreFile" type="file" accept=".json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">Progress is saved automatically in this browser. Use Export/Restore to move it to another device.</div>
+</div>
+
+<div class="print-sheet" id="printSheet">
+  <div class="print-head">
+    <div>
+      <h1 id="printTitle">CA Lecture Planner</h1>
+      <p id="printSubtitle">Personal lecture completion plan</p>
+    </div>
+    <div class="print-meta" id="printMeta"></div>
+  </div>
+
+  <div class="print-stats">
+    <div class="print-stat"><small>Completed</small><strong id="pCompleted">0/0</strong></div>
+    <div class="print-stat"><small>Remaining</small><strong id="pRemaining">0</strong></div>
+    <div class="print-stat"><small>Daily pace</small><strong id="pDaily">0</strong></div>
+    <div class="print-stat"><small>Weekly pace</small><strong id="pWeekly">0</strong></div>
+    <div class="print-stat"><small>Watch time/day</small><strong id="pWatch">0h</strong></div>
+  </div>
+
+  <div class="print-section">
+    <h2>Subject Progress</h2>
+    <table class="print-table">
+      <thead><tr><th>Subject</th><th>Faculty</th><th>Completed</th><th>Total</th><th>Remaining</th><th>Avg Lecture</th><th>Progress</th></tr></thead>
+      <tbody id="printSubjects"></tbody>
+    </table>
+  </div>
+
+  <div class="print-section">
+    <h2>Next 7-Day Target</h2>
+    <table class="print-table">
+      <thead><tr><th>Subject</th><th>Current</th><th>Remaining</th><th>Target</th></tr></thead>
+      <tbody id="printNextWeek"></tbody>
+    </table>
+  </div>
+
+  <div class="print-section">
+    <h2>Week-by-Week Planner</h2>
+    <table class="print-table" id="printWeekly"></table>
+  </div>
+
+  <div class="print-note" id="printNote"></div>
+  <div class="print-footer">Generated from the Smart CA Lecture Planner</div>
+</div>
+
+<div class="save-toast" id="toast">Saved ✓</div>
+
+<script>
+(function(){
+  const KEY="universalCALecturePlannerV1";
+  const root=document;
+  const today=()=>{
+    const d=new Date();
+    return {y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()};
+  };
+  const toUTC=({y,m,d})=>Date.UTC(y,m-1,d);
+  const parseDate=(s)=>{
+    const p=String(s||"").split("-").map(Number);
+    return p.length===3&&p.every(Number.isFinite)?{y:p[0],m:p[1],d:p[2]}:null;
+  };
+  const fmtISO=({y,m,d})=>`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const addDays=(x,n)=>{
+    const dt=new Date(toUTC(x)+n*86400000);
+    return {y:dt.getUTCFullYear(),m:dt.getUTCMonth()+1,d:dt.getUTCDate()};
+  };
+  const diffDays=(a,b)=>Math.floor((toUTC(b)-toUTC(a))/86400000);
+  const fmtShort=(x)=>new Date(toUTC(x)).toLocaleDateString("en-GB",{day:"2-digit",month:"short",timeZone:"UTC"});
+  const fmtLong=(x)=>new Date(toUTC(x)).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+  const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+  const num=(v,fallback=0)=>{const n=Number(v);return Number.isFinite(n)?n:fallback};
+  const uid=()=>Math.random().toString(36).slice(2,10);
+
+  const defaultTarget=()=> {
+    const t=today();
+    const y=t.m>=10 ? t.y : t.y;
+    return `${y}-12-31`;
+  };
+
+  const defaults={
+    studentName:"",
+    targetDate:"2026-12-31",
+    playbackSpeed:1.5,
+    bufferDays:7,
+    subjects:[
+      {id:uid(),name:"FR",faculty:"Faculty name",total:110,completed:0,hours:2,minutes:30},
+      {id:uid(),name:"Audit",faculty:"Faculty name",total:55,completed:0,hours:2,minutes:30},
+      {id:uid(),name:"AFM",faculty:"Faculty name",total:81,completed:0,hours:3,minutes:15},
+      {id:uid(),name:"DT",faculty:"Faculty name",total:71,completed:0,hours:3,minutes:30},
+      {id:uid(),name:"GST / IDT",faculty:"Faculty name",total:50,completed:0,hours:3,minutes:0}
+    ]
+  };
+
+  let state;
+  try{
+    state=JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults);
+  }catch(e){state=JSON.parse(JSON.stringify(defaults))}
+  if(!state.subjects||!Array.isArray(state.subjects)) state=JSON.parse(JSON.stringify(defaults));
+  state.subjects=state.subjects.map(s=>({...s,id:s.id||uid()}));
+
+  const $=id=>root.getElementById(id);
+  const els={
+    studentName:$("studentName"),targetDate:$("targetDate"),playbackSpeed:$("playbackSpeed"),bufferDays:$("bufferDays"),
+    subjects:$("subjects"),completedStat:$("completedStat"),completedPct:$("completedPct"),remainingStat:$("remainingStat"),
+    dailyStat:$("dailyStat"),weeklyStat:$("weeklyStat"),watchStat:$("watchStat"),speedSmall:$("speedSmall"),
+    nextWeekTable:$("nextWeekTable"),daysBadge:$("daysBadge"),weeklyTable:$("weeklyTable"),
+    planMessage:$("planMessage"),priorityChips:$("priorityChips"),suggestions:$("suggestions"),speedTable:$("speedTable"),
+    toast:$("toast"),heroTitle:$("heroTitle"),completeBanner:$("completeBanner"),restoreFile:$("restoreFile")
+  };
+
+  let toastTimer=null;
+  function save(show=true){
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(show){
+      clearTimeout(toastTimer); els.toast.classList.add("show");
+      toastTimer=setTimeout(()=>els.toast.classList.remove("show"),850);
+    }
+  }
+  function pulseStats(){
+    document.querySelectorAll(".stat").forEach(x=>{x.classList.remove("pop");void x.offsetWidth;x.classList.add("pop")})
+  }
+  function durationHours(s){return Math.max(0,num(s.hours)+num(s.minutes)/60)}
+  function totalLectures(){return state.subjects.reduce((a,s)=>a+Math.max(0,num(s.total)),0)}
+  function completedLectures(){return state.subjects.reduce((a,s)=>a+clamp(num(s.completed),0,Math.max(0,num(s.total))),0)}
+  function remLectures(s){return Math.max(0,num(s.total)-clamp(num(s.completed),0,num(s.total)))}
+  function remainingLectures(){return state.subjects.reduce((a,s)=>a+remLectures(s),0)}
+  function remainingContentHours(){return state.subjects.reduce((a,s)=>a+remLectures(s)*durationHours(s),0)}
+
+  function planning(){
+    const t=today();
+    let target=parseDate(state.targetDate)||addDays(t,90);
+    if(diffDays(t,target)<0) target=t;
+
+    const buffer=clamp(parseInt(state.bufferDays)||0,0,60);
+    const finalDeadline=addDays(target,buffer);
+
+    const rawDays=Math.max(1,diffDays(t,target)+1);
+    const finalRawDays=Math.max(1,diffDays(t,finalDeadline)+1);
+    const weeks=Math.max(1,Math.ceil(rawDays/7));
+    const fallbackWeeks=Math.max(1,Math.ceil(finalRawDays/7));
+
+    const rem=remainingLectures();
+    const daily=rem/rawDays;
+    const weekly=rem/weeks;
+
+    const fallbackDaily=rem/finalRawDays;
+    const fallbackWeekly=rem/fallbackWeeks;
+
+    return {
+      t,target,finalDeadline,rawDays,finalRawDays,weeks,fallbackWeeks,
+      buffer,studyDays:rawDays,rem,weekly,daily,fallbackDaily,fallbackWeekly
+    };
+  }
+
+  function renderSubjects(){
+    els.subjects.innerHTML="";
+    if(!state.subjects.length){
+      els.subjects.innerHTML='<div class="empty">No subjects yet. Tap “Add subject” to begin.</div>';return;
+    }
+    state.subjects.forEach((s,index)=>{
+      const total=Math.max(0,num(s.total)),done=clamp(num(s.completed),0,total),rem=Math.max(0,total-done);
+      const pct=total?Math.round(done/total*100):0;
+      const card=document.createElement("div");card.className="subject";
+      card.innerHTML=`
+        <div class="subject-top">
+          <div class="field"><label>Subject</label><input data-k="name" value="${escapeHtml(s.name||"")}" placeholder="e.g. FR"></div>
+          <div class="field"><label>Faculty</label><input data-k="faculty" value="${escapeHtml(s.faculty||"")}" placeholder="Faculty name"></div>
+          <button class="remove" type="button" aria-label="Remove subject">×</button>
+        </div>
+        <div class="subject-numbers">
+          <div class="field"><label>Total lectures</label><input data-k="total" type="number" min="0" max="9999" value="${total}"></div>
+          <div class="field"><label>Completed</label><input data-k="completed" type="number" min="0" max="${total}" value="${done}"></div>
+          <div class="field"><label>Avg hours</label><input data-k="hours" type="number" min="0" max="24" value="${Math.max(0,num(s.hours))}"></div>
+          <div class="field"><label>Avg minutes</label><input data-k="minutes" type="number" min="0" max="59" value="${clamp(num(s.minutes),0,59)}"></div>
+        </div>
+        <div class="progress"><div style="width:${pct}%"></div></div>
+        <div class="subject-foot"><span><strong>${pct}%</strong> complete</span><span>${rem} lectures left • ${formatHours(rem*durationHours(s))}</span></div>`;
+      card.querySelectorAll("input").forEach(inp=>{
+        inp.addEventListener("change",()=>{
+          const k=inp.dataset.k;
+          if(["total","completed","hours","minutes"].includes(k)){
+            let v=num(inp.value,0);
+            if(k==="total")v=clamp(Math.round(v),0,9999);
+            if(k==="completed")v=clamp(Math.round(v),0,Math.max(0,num(s.total)));
+            if(k==="hours")v=clamp(Math.round(v),0,24);
+            if(k==="minutes")v=clamp(Math.round(v),0,59);
+            s[k]=v;
+          }else s[k]=inp.value.trim();
+          save();render();
+        });
+      });
+      card.querySelector(".remove").addEventListener("click",()=>{
+        if(state.subjects.length===1 && !confirm("Remove the last subject?"))return;
+        state.subjects.splice(index,1);save();render();
+      });
+      els.subjects.appendChild(card);
+    });
+  }
+
+  function distributeWeeks(p){
+    const rows=[];
+    let start=p.t;
+
+    // Build the main plan only up to the requested target date.
+    while(toUTC(start)<=toUTC(p.target)){
+      const maxEnd=addDays(start,6);
+      const end=toUTC(maxEnd)>toUTC(p.target)?p.target:maxEnd;
+      rows.push({
+        start,
+        end,
+        type:"plan",
+        dayCount:diffDays(start,end)+1,
+        values:new Array(state.subjects.length).fill(0)
+      });
+      start=addDays(end,1);
+    }
+
+    // Spread each subject in proportion to the calendar days in each planned week.
+    const totalPlanDays=rows.reduce((sum,r)=>sum+r.dayCount,0);
+
+    state.subjects.forEach((s,si)=>{
+      const remaining=remLectures(s);
+      if(remaining<=0 || totalPlanDays<=0)return;
+
+      const exact=rows.map(r=>remaining*(r.dayCount/totalPlanDays));
+      const allocated=exact.map(x=>Math.floor(x));
+      let left=remaining-allocated.reduce((a,b)=>a+b,0);
+
+      const order=exact
+        .map((x,i)=>({i,frac:x-Math.floor(x)}))
+        .sort((a,b)=>b.frac-a.frac || a.i-b.i);
+
+      for(let k=0;k<left;k++){
+        allocated[order[k % order.length].i]+=1;
+      }
+
+      rows.forEach((r,i)=>r.values[si]=allocated[i]);
+    });
+
+    // Buffer comes AFTER the target and carries no planned lectures.
+    // It is available only if the student has backlog.
+    if(p.buffer>0){
+      let bufferStart=addDays(p.target,1);
+      let daysLeft=p.buffer;
+
+      while(daysLeft>0){
+        const block=Math.min(7,daysLeft);
+        const bufferEnd=addDays(bufferStart,block-1);
+
+        rows.push({
+          start:bufferStart,
+          end:bufferEnd,
+          type:"buffer",
+          dayCount:block,
+          values:new Array(state.subjects.length).fill(0)
+        });
+
+        bufferStart=addDays(bufferEnd,1);
+        daysLeft-=block;
+      }
+    }
+
+    return rows;
+  }
+
+  function renderStats(p){
+    const total=totalLectures(),done=completedLectures(),rem=p.rem,speed=clamp(num(state.playbackSpeed,1.5),1.1,2);
+    const content=remainingContentHours(),watch=content/speed,watchPerDay=watch/p.studyDays;
+    els.completedStat.textContent=`${done}/${total}`;
+    els.completedPct.textContent=`${total?Math.round(done/total*100):0}% overall`;
+    els.remainingStat.textContent=rem;
+    els.dailyStat.textContent=rem?p.daily.toFixed(1):"0";
+    els.weeklyStat.textContent=rem?Math.ceil(p.weekly):"0";
+    els.watchStat.textContent=rem?formatHours(watchPerDay):"0h";
+    els.speedSmall.textContent=`at ${speed.toFixed(1)}× speed`;
+    els.daysBadge.textContent=p.buffer?`${p.rawDays} days to target + ${p.buffer} buffer`:`${p.rawDays} days to target`;
+    els.completeBanner.classList.toggle("show",rem===0&&total>0);
+  }
+
+  function renderNextWeek(rows){
+    els.nextWeekTable.innerHTML="";
+    const first=rows[0];
+    state.subjects.forEach((s,i)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><strong>${escapeHtml(s.name||"Unnamed")}</strong></td>
+        <td class="muted">${escapeHtml(s.faculty||"—")}</td>
+        <td>${clamp(num(s.completed),0,num(s.total))}/${Math.max(0,num(s.total))}</td>
+        <td>${remLectures(s)}</td>
+        <td>${formatHours(durationHours(s))}</td>
+        <td class="total-cell">${first?first.values[i]:0}</td>`;
+      els.nextWeekTable.appendChild(tr);
+    });
+  }
+
+  function renderWeekly(rows){
+    if(!state.subjects.length){
+      els.weeklyTable.innerHTML='<tbody><tr><td>No subjects</td></tr></tbody>';
+      return;
+    }
+
+    const headers=state.subjects.map(s=>`<th>${escapeHtml(s.name||"Subject")}</th>`).join("");
+    let html=`<thead><tr><th>Week</th>${headers}<th>Total</th></tr></thead><tbody>`;
+
+    let planWeek=0;
+    let bufferWeek=0;
+
+    rows.slice(0,80).forEach(r=>{
+      if(r.type==="buffer"){
+        bufferWeek++;
+        html+=`<tr style="background:#fff7ed">
+          <td><strong>BUFFER ${bufferWeek}</strong><br><span class="muted">${fmtShort(r.start)} – ${fmtShort(r.end)}</span></td>
+          ${r.values.map(()=>`<td>Catch-up</td>`).join("")}
+          <td class="total-cell">—</td>
+        </tr>`;
+      }else{
+        planWeek++;
+        const total=r.values.reduce((a,b)=>a+b,0);
+        html+=`<tr>
+          <td><strong>W${planWeek}</strong><br><span class="muted">${fmtShort(r.start)} – ${fmtShort(r.end)}</span></td>
+          ${r.values.map(v=>`<td>${v}</td>`).join("")}
+          <td class="total-cell">${total}</td>
+        </tr>`;
+      }
+    });
+
+    html+="</tbody>";
+    els.weeklyTable.innerHTML=html;
+  }
+
+  function renderPlanMessage(p,rows){
+    const speed=clamp(num(state.playbackSpeed,1.5),1.1,2);
+    const content=remainingContentHours();
+    const watch=content/speed;
+    const firstPlan=rows.find(r=>r.type==="plan");
+    const firstTotal=firstPlan?firstPlan.values.reduce((a,b)=>a+b,0):0;
+
+    if(p.rem===0){
+      els.planMessage.innerHTML="<strong>Lecture target complete.</strong> You can now use this time for revision, practice, mock tests and weak-area improvement.";
+      return;
+    }
+
+    const bufferText=p.buffer>0
+      ? ` If you fall behind, you still have <strong>${p.buffer} safety buffer day${p.buffer===1?"":"s"}</strong>, so your final catch-up deadline becomes <strong>${fmtLong(p.finalDeadline)}</strong>.`
+      : "";
+
+    els.planMessage.innerHTML=`You have <strong>${p.rem} lectures</strong> remaining and <strong>${p.rawDays} calendar days</strong> until your main target of
+      <strong>${fmtLong(p.target)}</strong>. To finish on time, aim for about
+      <strong>${p.daily.toFixed(1)} lectures/day</strong> or <strong>${Math.ceil(p.weekly)} per week</strong>.
+      At <strong>${speed.toFixed(1)}×</strong>, your remaining video watch time is about <strong>${formatHours(watch)}</strong>.
+      Your immediate 7-day target is <strong>${firstTotal} lectures</strong>.${bufferText}`;
+  }
+
+  function renderPriority(){
+    els.priorityChips.innerHTML="";
+    const ranked=state.subjects.map(s=>({name:s.name||"Unnamed",hours:remLectures(s)*durationHours(s),rem:remLectures(s)}))
+      .filter(x=>x.rem>0).sort((a,b)=>b.hours-a.hours).slice(0,3);
+    if(!ranked.length){els.priorityChips.innerHTML='<span class="chip">Nothing pending</span>';return}
+    ranked.forEach(x=>{
+      const chip=document.createElement("span");chip.className="chip";chip.textContent=`${x.name} • ${formatHours(x.hours)} left`;els.priorityChips.appendChild(chip)
+    });
+  }
+
+  function renderSuggestions(p){
+    const rem=p.rem;
+    const speed=clamp(num(state.playbackSpeed,1.5),1.1,2);
+    const content=remainingContentHours();
+
+    if(rem===0){
+      els.suggestions.innerHTML='<div class="tip"><div class="kicker">Done</div><strong>Lectures completed</strong><p>Shift your focus to revision and question practice.</p></div>';
+      els.speedTable.innerHTML="";
+      return;
+    }
+
+    const options=[];
+    for(let i=11;i<=20;i++) options.push(i/10);
+
+    const next=options.find(x=>x>speed+0.001);
+
+    const extraDaily=p.daily+1;
+    const fasterDays=Math.ceil(rem/extraDaily);
+    const daysSaved=Math.max(0,p.rawDays-fasterDays);
+
+    const sevenEarlyDays=Math.max(1,p.rawDays-7);
+    const sevenEarlyPace=rem/sevenEarlyDays;
+
+    const ranked=state.subjects
+      .map(s=>({name:s.name||"Unnamed",hours:remLectures(s)*durationHours(s)}))
+      .sort((a,b)=>b.hours-a.hours);
+    const biggest=ranked.find(x=>x.hours>0);
+
+    let tips=[];
+
+    if(next){
+      const saved=content/speed-content/next;
+      tips.push({
+        k:"Playback speed",
+        title:`Try ${next.toFixed(1)}× where comfortable`,
+        text:`That can save about ${formatHours(Math.max(0,saved))} of pure video time compared with ${speed.toFixed(1)}×. Keep difficult concepts slower.`
+      });
+    }else{
+      tips.push({
+        k:"Playback speed",
+        title:"Already at 2.0×",
+        text:"Instead of increasing speed further, save time through consistency, selective replay and faster handling of familiar sections."
+      });
+    }
+
+    tips.push({
+      k:"Earlier finish",
+      title:"+1 lecture/day",
+      text:`At roughly ${extraDaily.toFixed(1)} lectures per day, you could finish about ${daysSaved} day${daysSaved===1?"":"s"} earlier than your main target.`
+    });
+
+    tips.push({
+      k:"Finish 7 days early",
+      title:`Aim for ${sevenEarlyPace.toFixed(1)}/day`,
+      text:"This pace aims to complete your lectures one week before the main target date."
+    });
+
+    if(p.buffer>0){
+      tips.push({
+        k:"Safety buffer",
+        title:`${p.buffer} extra catch-up day${p.buffer===1?"":"s"}`,
+        text:`Your normal plan still finishes by ${fmtLong(p.target)}. The buffer only extends your fallback deadline to ${fmtLong(p.finalDeadline)} if you fall behind.`
+      });
+    }
+
+    if(biggest){
+      tips.push({
+        k:"Priority",
+        title:`Protect time for ${biggest.name}`,
+        text:"It currently has the largest remaining lecture-hour load, so it needs the most consistent study slots."
+      });
+    }
+
+    tips.push({
+      k:"Consistency",
+      title:"Do not plan to use the buffer",
+      text:"Treat the buffer as emergency catch-up time. Follow the main target pace first and use buffer days only for unavoidable backlog."
+    });
+
+    els.suggestions.innerHTML=tips.map(t=>
+      `<div class="tip"><div class="kicker">${escapeHtml(t.k)}</div><strong>${escapeHtml(t.title)}</strong><p>${escapeHtml(t.text)}</p></div>`
+    ).join("");
+
+    const maxWatch=content/1.1;
+    els.speedTable.innerHTML=
+      `<div style="font-size:11px;color:#6b7280;margin:13px 0 4px"><strong style="color:#334155">Remaining watch-time comparison</strong></div>`+
+      options.map(x=>{
+        const h=content/x;
+        const pct=maxWatch?Math.round(h/maxWatch*100):0;
+        const current=Math.abs(x-speed)<0.001;
+        return `<div class="speed-row ${current?"current":""}">
+          <div>${x.toFixed(1)}×</div>
+          <div class="speed-bar"><div style="width:${pct}%"></div></div>
+          <div>${formatHours(h)}</div>
+        </div>`;
+      }).join("");
+  }
+
+
+  function renderPrintSheet(){
+    const p=planning(), rows=distributeWeeks(p);
+    const total=totalLectures(), done=completedLectures(), rem=p.rem;
+    const speed=clamp(num(state.playbackSpeed,1.5),1.1,2);
+    const watchPerDay=(remainingContentHours()/speed)/p.rawDays;
+
+    $("printTitle").textContent=(state.studentName?state.studentName+"'s ":"")+"CA Lecture Planner";
+    $("printSubtitle").textContent="Personal lecture completion plan";
+    $("printMeta").innerHTML=`Target: <strong>${fmtLong(p.target)}</strong><br>
+      Playback speed: <strong>${speed.toFixed(1)}×</strong><br>
+      Safety buffer: <strong>${p.buffer} day${p.buffer===1?"":"s"}</strong><br>
+      Final fallback deadline: <strong>${fmtLong(p.finalDeadline)}</strong>`;
+
+    $("pCompleted").textContent=`${done}/${total}`;
+    $("pRemaining").textContent=rem;
+    $("pDaily").textContent=rem?p.daily.toFixed(1):"0";
+    $("pWeekly").textContent=rem?Math.ceil(p.weekly):"0";
+    $("pWatch").textContent=rem?formatHours(watchPerDay):"0h";
+
+    $("printSubjects").innerHTML=state.subjects.map(s=>{
+      const t=Math.max(0,num(s.total)), c=clamp(num(s.completed),0,t), r=Math.max(0,t-c), pct=t?Math.round(c/t*100):0;
+      return `<tr><td>${escapeHtml(s.name||"Unnamed")}</td><td>${escapeHtml(s.faculty||"—")}</td><td>${c}</td><td>${t}</td><td>${r}</td><td>${formatHours(durationHours(s))}</td><td>${pct}%</td></tr>`;
+    }).join("");
+
+    const first=rows.find(r=>r.type==="plan");
+    $("printNextWeek").innerHTML=state.subjects.map((s,i)=>{
+      const t=Math.max(0,num(s.total)), c=clamp(num(s.completed),0,t), r=Math.max(0,t-c);
+      return `<tr><td>${escapeHtml(s.name||"Unnamed")}</td><td>${c}/${t}</td><td>${r}</td><td>${first?first.values[i]:0}</td></tr>`;
+    }).join("");
+
+    const headers=state.subjects.map(s=>`<th>${escapeHtml(s.name||"Subject")}</th>`).join("");
+    let weekly=`<thead><tr><th>Week</th>${headers}<th>Total</th></tr></thead><tbody>`;
+    let pw=0,bw=0;
+
+    rows.slice(0,80).forEach(r=>{
+      if(r.type==="buffer"){
+        bw++;
+        weekly+=`<tr><td>BUFFER ${bw}<br>${fmtShort(r.start)}–${fmtShort(r.end)}</td>${r.values.map(()=>`<td>Catch-up</td>`).join("")}<td>—</td></tr>`;
+      }else{
+        pw++;
+        weekly+=`<tr><td>W${pw}<br>${fmtShort(r.start)}–${fmtShort(r.end)}</td>${r.values.map(v=>`<td>${v}</td>`).join("")}<td><strong>${r.values.reduce((a,b)=>a+b,0)}</strong></td></tr>`;
+      }
+    });
+
+    weekly+="</tbody>";
+    $("printWeekly").innerHTML=weekly;
+
+    $("printNote").innerHTML=rem===0
+      ? "<strong>All lectures complete.</strong> Shift focus to revision, question practice and tests."
+      : `Main target pace: <strong>${p.daily.toFixed(1)} lectures/day</strong> and <strong>${Math.ceil(p.weekly)} per week</strong>.
+         Remaining watch time at ${speed.toFixed(1)}× is approximately <strong>${formatHours(remainingContentHours()/speed)}</strong>.
+         The ${p.buffer}-day buffer starts only after the main target date.`;
+  }
+
+  function render(){
+    els.studentName.value=state.studentName||"";
+    els.targetDate.value=state.targetDate||"2026-12-31";
+    els.playbackSpeed.value=String(state.playbackSpeed||1.5);
+    els.bufferDays.value=String(state.bufferDays??7);
+    els.heroTitle.textContent=(state.studentName?state.studentName+"'s ":"")+"CA Lecture Planner";
+    renderSubjects();
+    const p=planning(),rows=distributeWeeks(p);
+    renderStats(p);renderNextWeek(rows);renderWeekly(rows);renderPlanMessage(p,rows);renderPriority();renderSuggestions(p);
+    renderPrintSheet();
+    pulseStats();
+  }
+
+  function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+  function formatHours(h){
+    h=Math.max(0,num(h));const hr=Math.floor(h),min=Math.round((h-hr)*60);
+    if(hr===0)return `${min}m`; if(min===60)return `${hr+1}h`; return min?`${hr}h ${min}m`:`${hr}h`;
+  }
+
+  els.studentName.addEventListener("change",()=>{state.studentName=els.studentName.value.trim();save();render()});
+  els.targetDate.addEventListener("change",()=>{
+    const t=parseDate(els.targetDate.value),now=today();
+    if(!t||diffDays(now,t)<0){alert("Choose today or a future target date.");els.targetDate.value=state.targetDate;return}
+    state.targetDate=els.targetDate.value;save();render();
+  });
+  els.playbackSpeed.addEventListener("change",()=>{state.playbackSpeed=clamp(num(els.playbackSpeed.value,1.5),1.1,2);save();render()});
+  els.bufferDays.addEventListener("change",()=>{
+    state.bufferDays=clamp(parseInt(els.bufferDays.value)||0,0,60);
+    els.bufferDays.value=String(state.bufferDays);
+    save();
+    render();
+  });
+  $("addSubjectBtn").addEventListener("click",()=>{
+    state.subjects.push({id:uid(),name:"New Subject",faculty:"",total:0,completed:0,hours:2,minutes:30});save();render();
+    setTimeout(()=>window.scrollTo({top:document.body.scrollHeight/3,behavior:"smooth"}),50);
+  });
+  $("printBtn").addEventListener("click",()=>{
+    renderPrintSheet();
+    setTimeout(()=>window.print(),60);
+  });
+  $("exportBtn").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify({savedAt:new Date().toISOString(),planner:state},null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;
+    a.download=(state.studentName?state.studentName.replace(/[^a-z0-9]+/gi,"-")+"-":"")+"lecture-planner-backup.json";a.click();URL.revokeObjectURL(url);
+  });
+  $("restoreBtn").addEventListener("click",()=>els.restoreFile.click());
+  els.restoreFile.addEventListener("change",()=>{
+    const f=els.restoreFile.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{
+      const obj=JSON.parse(r.result),p=obj.planner||obj;if(!p||!Array.isArray(p.subjects))throw new Error();
+      state=p;state.subjects=state.subjects.map(s=>({...s,id:s.id||uid()}));save();render();alert("Planner restored successfully.");
+    }catch(e){alert("That backup file is not valid.")}els.restoreFile.value=""};
+    r.readAsText(f);
+  });
+  $("resetBtn").addEventListener("click",()=>{
+    if(confirm("Reset this planner to the starter template?")){state=JSON.parse(JSON.stringify(defaults));state.subjects=state.subjects.map(s=>({...s,id:uid()}));save();render()}
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
