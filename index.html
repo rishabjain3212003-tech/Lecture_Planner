@@ -89,7 +89,7 @@ button{cursor:pointer}
 }
 .field input:focus,.field select:focus{border-color:#8fb1ff;box-shadow:0 0 0 3px #e9f0ff}
 .remove{border:0;background:#fff1f2;color:#be123c;border-radius:9px;width:40px;height:40px;font-size:17px}
-.subject-numbers{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:9px}
+.subject-numbers{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:9px}
 .progress{height:8px;background:#edf1f7;border-radius:999px;overflow:hidden;margin-top:11px}
 .progress>div{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:999px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
 .subject-foot{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:var(--muted);font-size:11px}
@@ -179,6 +179,36 @@ tbody tr{transition:background .18s ease}
   .print-footer{text-align:center;font-size:7px;color:#666;margin-top:8px}
 }
 
+
+.intensity-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:8px;
+}
+.intensity-day{
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:10px;
+  background:#fff;
+}
+.intensity-day strong{
+  display:block;
+  font-size:12px;
+  margin-bottom:7px;
+}
+.intensity-day select{
+  width:100%;
+  min-height:40px;
+  border:1px solid #d8e0ec;
+  border-radius:9px;
+  padding:8px;
+  background:#fff;
+  color:var(--text);
+}
+@media(max-width:760px){
+  .intensity-grid{grid-template-columns:repeat(2,1fr)}
+}
+
 </style>
 </head>
 <body>
@@ -222,6 +252,21 @@ tbody tr{transition:background .18s ease}
     </div>
   </section>
 
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Choose Your Weekly Intensity</h2>
+        <p>Set each weekday as Easy, Normal or Hard. The planner will move more lectures to your stronger days.</p>
+      </div>
+      <div class="badge">Your routine</div>
+    </div>
+    <div class="intensity-grid" id="intensityGrid"></div>
+    <div class="callout" style="margin-top:10px">
+      <strong>Easy</strong> = lighter workload • <strong>Normal</strong> = standard workload • <strong>Hard</strong> = heavier workload.
+      The total number of lectures stays aligned with your completion target.
+    </div>
+  </section>
+
   <section class="stats">
     <div class="stat"><span>Completed</span><strong id="completedStat">0/0</strong><small id="completedPct">0% overall</small></div>
     <div class="stat"><span>Remaining</span><strong id="remainingStat">0</strong><small>lectures left</small></div>
@@ -234,7 +279,7 @@ tbody tr{transition:background .18s ease}
 
   <section class="panel">
     <div class="panel-head">
-      <div><h2>Subjects & Lectures</h2><p>Everything here is editable. Add or remove subjects whenever required.</p></div>
+      <div><h2>Subjects & Lectures</h2><p>Choose Finish Priority: 1 = highest. The planner then creates a flexible daily load instead of forcing the same number of lectures every day.</p></div>
       <div class="actions"><button class="btn btn-add" id="addSubjectBtn" type="button">+ Add subject</button></div>
     </div>
     <div class="subjects" id="subjects"></div>
@@ -247,8 +292,29 @@ tbody tr{transition:background .18s ease}
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Subject</th><th>Faculty</th><th>Current</th><th>Remaining</th><th>Avg duration</th><th>Next 7 days</th></tr></thead>
+        <thead><tr><th>Order</th><th>Subject</th><th>Faculty</th><th>Current</th><th>Remaining</th><th>Avg duration</th><th>Next 7 days</th><th>Est. finish</th></tr></thead>
         <tbody id="nextWeekTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Daily 3-Subject Planner</h2>
+        <p>Up to 3 subjects per day. Higher Finish Order priority gets more lecture slots.</p>
+      </div>
+      <div class="badge">Flexible load</div>
+    </div>
+    <div class="callout" style="margin-bottom:10px">
+      <strong>How it works:</strong> the planner varies the number of lectures by day instead of forcing the same target daily. Higher-priority subjects get more attention, while other subjects rotate through the plan.
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Day type</th><th>Subject mix</th><th>Total lectures</th><th>Approx watch time</th></tr>
+        </thead>
+        <tbody id="dailyPlanner"></tbody>
       </table>
     </div>
   </section>
@@ -324,6 +390,14 @@ tbody tr{transition:background .18s ease}
   </div>
 
   <div class="print-section">
+    <h2>Flexible Daily Plan — Next 7 Days</h2>
+    <table class="print-table">
+      <thead><tr><th>Date</th><th>Day Type</th><th>Subject Mix</th><th>Total</th><th>Watch Time</th></tr></thead>
+      <tbody id="printDaily"></tbody>
+    </table>
+  </div>
+
+  <div class="print-section">
     <h2>Week-by-Week Planner</h2>
     <table class="print-table" id="printWeekly"></table>
   </div>
@@ -370,12 +444,21 @@ tbody tr{transition:background .18s ease}
     targetDate:"2026-12-31",
     playbackSpeed:1.5,
     bufferDays:7,
+    dayIntensity:{
+      "0":"Easy",
+      "1":"Normal",
+      "2":"Normal",
+      "3":"Normal",
+      "4":"Normal",
+      "5":"Hard",
+      "6":"Normal"
+    },
     subjects:[
-      {id:uid(),name:"FR",faculty:"Faculty name",total:110,completed:0,hours:2,minutes:30},
-      {id:uid(),name:"Audit",faculty:"Faculty name",total:55,completed:0,hours:2,minutes:30},
-      {id:uid(),name:"AFM",faculty:"Faculty name",total:81,completed:0,hours:3,minutes:15},
-      {id:uid(),name:"DT",faculty:"Faculty name",total:71,completed:0,hours:3,minutes:30},
-      {id:uid(),name:"GST / IDT",faculty:"Faculty name",total:50,completed:0,hours:3,minutes:0}
+      {id:uid(),name:"FR",faculty:"Faculty name",total:110,completed:0,hours:2,minutes:30,priority:1},
+      {id:uid(),name:"Audit",faculty:"Faculty name",total:55,completed:0,hours:2,minutes:30,priority:2},
+      {id:uid(),name:"AFM",faculty:"Faculty name",total:81,completed:0,hours:3,minutes:15,priority:3},
+      {id:uid(),name:"DT",faculty:"Faculty name",total:71,completed:0,hours:3,minutes:30,priority:4},
+      {id:uid(),name:"GST / IDT",faculty:"Faculty name",total:50,completed:0,hours:3,minutes:0,priority:5}
     ]
   };
 
@@ -384,14 +467,18 @@ tbody tr{transition:background .18s ease}
     state=JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults);
   }catch(e){state=JSON.parse(JSON.stringify(defaults))}
   if(!state.subjects||!Array.isArray(state.subjects)) state=JSON.parse(JSON.stringify(defaults));
-  state.subjects=state.subjects.map(s=>({...s,id:s.id||uid()}));
+  if(!state.dayIntensity || typeof state.dayIntensity!=="object"){
+    state.dayIntensity={"0":"Easy","1":"Normal","2":"Normal","3":"Normal","4":"Normal","5":"Hard","6":"Normal"};
+  }
+  state.subjects=state.subjects.map((s,i)=>({...s,id:s.id||uid(),priority:Math.max(1,parseInt(s.priority)||i+1)}));
 
   const $=id=>root.getElementById(id);
   const els={
     studentName:$("studentName"),targetDate:$("targetDate"),playbackSpeed:$("playbackSpeed"),bufferDays:$("bufferDays"),
+    intensityGrid:$("intensityGrid"),
     subjects:$("subjects"),completedStat:$("completedStat"),completedPct:$("completedPct"),remainingStat:$("remainingStat"),
     dailyStat:$("dailyStat"),weeklyStat:$("weeklyStat"),watchStat:$("watchStat"),speedSmall:$("speedSmall"),
-    nextWeekTable:$("nextWeekTable"),daysBadge:$("daysBadge"),weeklyTable:$("weeklyTable"),
+    nextWeekTable:$("nextWeekTable"),daysBadge:$("daysBadge"),dailyPlanner:$("dailyPlanner"),weeklyTable:$("weeklyTable"),
     planMessage:$("planMessage"),priorityChips:$("priorityChips"),suggestions:$("suggestions"),speedTable:$("speedTable"),
     toast:$("toast"),heroTitle:$("heroTitle"),completeBanner:$("completeBanner"),restoreFile:$("restoreFile")
   };
@@ -440,6 +527,42 @@ tbody tr{transition:background .18s ease}
     };
   }
 
+  function renderIntensity(){
+    const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    els.intensityGrid.innerHTML="";
+
+    names.forEach((name,index)=>{
+      const wrap=document.createElement("div");
+      wrap.className="intensity-day";
+
+      const current=state.dayIntensity[String(index)]||"Normal";
+
+      wrap.innerHTML=`<strong>${name}</strong>
+        <select aria-label="${name} intensity">
+          <option value="Easy" ${current==="Easy"?"selected":""}>Easy</option>
+          <option value="Normal" ${current==="Normal"?"selected":""}>Normal</option>
+          <option value="Hard" ${current==="Hard"?"selected":""}>Hard</option>
+        </select>`;
+
+      const select=wrap.querySelector("select");
+      select.addEventListener("change",()=>{
+        state.dayIntensity[String(index)]=select.value;
+        save();
+        render();
+      });
+
+      els.intensityGrid.appendChild(wrap);
+    });
+  }
+
+  function intensityWeight(dateParts){
+    const jsDay=new Date(toUTC(dateParts)).getUTCDay();
+    const level=state.dayIntensity[String(jsDay)]||"Normal";
+    if(level==="Easy") return 0.72;
+    if(level==="Hard") return 1.35;
+    return 1.0;
+  }
+
   function renderSubjects(){
     els.subjects.innerHTML="";
     if(!state.subjects.length){
@@ -460,18 +583,20 @@ tbody tr{transition:background .18s ease}
           <div class="field"><label>Completed</label><input data-k="completed" type="number" min="0" max="${total}" value="${done}"></div>
           <div class="field"><label>Avg hours</label><input data-k="hours" type="number" min="0" max="24" value="${Math.max(0,num(s.hours))}"></div>
           <div class="field"><label>Avg minutes</label><input data-k="minutes" type="number" min="0" max="59" value="${clamp(num(s.minutes),0,59)}"></div>
+          <div class="field"><label>Finish priority</label><input data-k="priority" type="number" min="1" max="99" value="${Math.max(1,parseInt(s.priority)||index+1)}"></div>
         </div>
         <div class="progress"><div style="width:${pct}%"></div></div>
         <div class="subject-foot"><span><strong>${pct}%</strong> complete</span><span>${rem} lectures left • ${formatHours(rem*durationHours(s))}</span></div>`;
       card.querySelectorAll("input").forEach(inp=>{
         inp.addEventListener("change",()=>{
           const k=inp.dataset.k;
-          if(["total","completed","hours","minutes"].includes(k)){
+          if(["total","completed","hours","minutes","priority"].includes(k)){
             let v=num(inp.value,0);
             if(k==="total")v=clamp(Math.round(v),0,9999);
             if(k==="completed")v=clamp(Math.round(v),0,Math.max(0,num(s.total)));
             if(k==="hours")v=clamp(Math.round(v),0,24);
             if(k==="minutes")v=clamp(Math.round(v),0,59);
+            if(k==="priority")v=clamp(Math.round(v),1,99);
             s[k]=v;
           }else s[k]=inp.value.trim();
           save();render();
@@ -485,70 +610,296 @@ tbody tr{transition:background .18s ease}
     });
   }
 
-  function distributeWeeks(p){
-    const rows=[];
-    let start=p.t;
+  const MAX_SUBJECTS_PER_DAY=3;
 
-    // Build the main plan only up to the requested target date.
-    while(toUTC(start)<=toUTC(p.target)){
-      const maxEnd=addDays(start,6);
-      const end=toUTC(maxEnd)>toUTC(p.target)?p.target:maxEnd;
-      rows.push({
-        start,
-        end,
+  function buildDailyPlan(p){
+    const days=[];
+    let d=p.t;
+
+    while(toUTC(d)<=toUTC(p.target)){
+      days.push({
+        date:d,
         type:"plan",
-        dayCount:diffDays(start,end)+1,
         values:new Array(state.subjects.length).fill(0)
       });
-      start=addDays(end,1);
+      d=addDays(d,1);
     }
 
-    // Spread each subject in proportion to the calendar days in each planned week.
-    const totalPlanDays=rows.reduce((sum,r)=>sum+r.dayCount,0);
+    if(p.rem<=0 || !days.length) return days;
 
-    state.subjects.forEach((s,si)=>{
-      const remaining=remLectures(s);
-      if(remaining<=0 || totalPlanDays<=0)return;
+    const initialRemaining=state.subjects.map(s=>remLectures(s));
+    const remaining=[...initialRemaining];
+    const lastStudied=new Array(state.subjects.length).fill(-999);
 
-      const exact=rows.map(r=>remaining*(r.dayCount/totalPlanDays));
-      const allocated=exact.map(x=>Math.floor(x));
-      let left=remaining-allocated.reduce((a,b)=>a+b,0);
+    const avg=p.rem/days.length;
 
-      const order=exact
-        .map((x,i)=>({i,frac:x-Math.floor(x)}))
-        .sort((a,b)=>b.frac-a.frac || a.i-b.i);
+    // User-selected weekday intensity controls how much of the total workload
+    // each day should carry. Easy days get less, Hard days get more.
+    const rawWeights=days.map(day=>intensityWeight(day.date));
+    const weightTotal=rawWeights.reduce((a,b)=>a+b,0) || 1;
 
-      for(let k=0;k<left;k++){
-        allocated[order[k % order.length].i]+=1;
+    const exactCaps=rawWeights.map(w=>p.rem*(w/weightTotal));
+    let capacities=exactCaps.map(x=>Math.floor(x));
+    let left=p.rem-capacities.reduce((a,b)=>a+b,0);
+
+    // Give rounding extras to days with the largest fractional share first.
+    const order=exactCaps
+      .map((x,i)=>({i,frac:x-Math.floor(x),weight:rawWeights[i]}))
+      .sort((a,b)=>b.frac-a.frac || b.weight-a.weight || a.i-b.i);
+
+    for(let k=0;k<left;k++){
+      capacities[order[k % order.length].i]+=1;
+    }
+
+    // Keep Easy days visibly lighter and Hard days capable of taking more,
+    // while still preserving the exact total lecture count.
+    function levelForDay(day){
+      const jsDay=new Date(toUTC(day.date)).getUTCDay();
+      return state.dayIntensity[String(jsDay)]||"Normal";
+    }
+
+    // Rebalance any obviously awkward day without changing the total.
+    let changed=true;
+    let guard=0;
+    while(changed && guard<200){
+      changed=false;
+      guard++;
+
+      for(let i=0;i<days.length;i++){
+        const level=levelForDay(days[i]);
+
+        let softMax;
+        if(level==="Easy"){
+          softMax = avg<2 ? 1 : Math.max(1,Math.ceil(avg*0.75));
+        }else if(level==="Hard"){
+          softMax = Math.max(2,Math.ceil(avg*1.45));
+        }else{
+          softMax = Math.max(1,Math.ceil(avg*1.10));
+        }
+
+        if(capacities[i]>softMax){
+          const recipients=days
+            .map((d,j)=>({
+              j,
+              level:levelForDay(d),
+              room: j===i ? -999 : (
+                (levelForDay(d)==="Hard"?2:levelForDay(d)==="Normal"?1:0) -
+                capacities[j]/Math.max(1,avg)
+              )
+            }))
+            .filter(x=>x.j!==i)
+            .sort((a,b)=>b.room-a.room);
+
+          const target=recipients[0];
+          if(target && target.room>-999){
+            capacities[i]-=1;
+            capacities[target.j]+=1;
+            changed=true;
+          }
+        }
+      }
+    }
+
+    const priorityValues=state.subjects.map((s,i)=>Math.max(1,parseInt(s.priority)||i+1));
+    const maxPriority=Math.max(1,...priorityValues);
+
+    function priorityBoost(i){
+      if(state.subjects.length<=1) return 1.35;
+      const normalized=(maxPriority-priorityValues[i])/Math.max(1,maxPriority-1);
+      return 1.00+(0.38*normalized);
+    }
+
+    function watchDuration(i){
+      return Math.max(0.1,durationHours(state.subjects[i]) / clamp(num(state.playbackSpeed,1.5),1.1,2));
+    }
+
+    function subjectScore(i,dayIndex){
+      if(remaining[i]<=0) return -Infinity;
+
+      const remainingDays=Math.max(1,days.length-dayIndex);
+      const urgency=remaining[i]/remainingDays;
+
+      const gap=dayIndex-lastStudied[i];
+      let rotation=1;
+      if(lastStudied[i]===-999) rotation=1.30;
+      else if(gap<=1) rotation=0.72;
+      else if(gap===2) rotation=1.10;
+      else if(gap===3) rotation=1.25;
+      else rotation=1.42;
+
+      const durationAdjustment=1/Math.pow(watchDuration(i),0.12);
+
+      return urgency*priorityBoost(i)*rotation*durationAdjustment;
+    }
+
+    days.forEach((day,dayIndex)=>{
+      let slots=capacities[dayIndex];
+      if(slots<=0) return;
+
+      let active=state.subjects.map((s,i)=>i).filter(i=>remaining[i]>0);
+      if(!active.length) return;
+
+      // Decide how many subjects make sense for today's lecture load.
+      // 1 lecture  -> 1 subject
+      // 2 lectures -> 1 or 2 subjects
+      // 3 lectures -> usually 2 subjects, sometimes 3
+      // 4+ lectures -> usually 2 or 3 subjects
+      let uniqueTarget=1;
+
+      if(slots===2){
+        uniqueTarget=active.length>=2 && (dayIndex%3!==0) ? 2 : 1;
+      }else if(slots===3){
+        uniqueTarget=Math.min(active.length, dayIndex%2===0 ? 2 : 3);
+      }else if(slots>=4){
+        uniqueTarget=Math.min(active.length, 3);
       }
 
-      rows.forEach((r,i)=>r.values[si]=allocated[i]);
+      let ranked=active
+        .map(i=>({i,score:subjectScore(i,dayIndex)}))
+        .sort((a,b)=>b.score-a.score || priorityValues[a.i]-priorityValues[b.i]);
+
+      let selected=ranked.slice(0,uniqueTarget).map(x=>x.i);
+
+      // Give every selected subject one lecture first.
+      for(const i of selected){
+        if(slots<=0) break;
+        if(remaining[i]>0){
+          day.values[i]+=1;
+          remaining[i]-=1;
+          slots-=1;
+        }
+      }
+
+      // Remaining lecture slots go to the most sensible subject within today's mix.
+      while(slots>0){
+        const available=selected.filter(i=>remaining[i]>0);
+
+        if(!available.length){
+          const used=new Set(day.values.map((v,i)=>v>0?i:null).filter(i=>i!==null));
+          if(used.size<MAX_SUBJECTS_PER_DAY){
+            const next=state.subjects
+              .map((s,i)=>i)
+              .filter(i=>remaining[i]>0 && !used.has(i))
+              .sort((a,b)=>subjectScore(b,dayIndex)-subjectScore(a,dayIndex))[0];
+
+            if(next!==undefined){
+              selected.push(next);
+              day.values[next]+=1;
+              remaining[next]-=1;
+              slots-=1;
+              continue;
+            }
+          }
+          break;
+        }
+
+        const best=available
+          .map(i=>{
+            const already=day.values[i];
+
+            // Diminishing returns stop one subject from taking everything,
+            // but priority still gives it a meaningful advantage.
+            const diminishing=1/(1+(already*0.62));
+            const priority=priorityBoost(i);
+            const backlog=remaining[i]/Math.max(1,initialRemaining[i]);
+
+            return {
+              i,
+              score:priority*diminishing*(0.75+backlog)
+            };
+          })
+          .sort((a,b)=>b.score-a.score || priorityValues[a.i]-priorityValues[b.i])[0];
+
+        day.values[best.i]+=1;
+        remaining[best.i]-=1;
+        slots-=1;
+      }
+
+      day.values.forEach((v,i)=>{
+        if(v>0) lastStudied[i]=dayIndex;
+      });
     });
 
-    // Buffer comes AFTER the target and carries no planned lectures.
-    // It is available only if the student has backlog.
+    // Clean up any extremely rare rounding leftovers while keeping max 3 subjects/day.
+    let stillLeft=remaining.reduce((a,b)=>a+b,0);
+
+    if(stillLeft>0){
+      for(let di=days.length-1;di>=0 && stillLeft>0;di--){
+        const used=new Set(days[di].values.map((v,i)=>v>0?i:null).filter(i=>i!==null));
+
+        const candidates=state.subjects
+          .map((s,i)=>i)
+          .filter(i=>remaining[i]>0 && (used.has(i)||used.size<MAX_SUBJECTS_PER_DAY))
+          .sort((a,b)=>priorityValues[a]-priorityValues[b] || remaining[b]-remaining[a]);
+
+        for(const i of candidates){
+          if(stillLeft<=0) break;
+
+          if(used.has(i)||used.size<MAX_SUBJECTS_PER_DAY){
+            days[di].values[i]+=1;
+            remaining[i]-=1;
+            stillLeft-=1;
+            used.add(i);
+          }
+        }
+      }
+    }
+
+    return days;
+  }
+
+  function distributeWeeks(p){
+    const daily=buildDailyPlan(p);
+    const rows=[];
+
+    for(let i=0;i<daily.length;i+=7){
+      const chunk=daily.slice(i,i+7);
+      const values=new Array(state.subjects.length).fill(0);
+      chunk.forEach(day=>day.values.forEach((v,si)=>values[si]+=v));
+
+      rows.push({
+        start:chunk[0].date,
+        end:chunk[chunk.length-1].date,
+        type:"plan",
+        dayCount:chunk.length,
+        values
+      });
+    }
+
     if(p.buffer>0){
-      let bufferStart=addDays(p.target,1);
-      let daysLeft=p.buffer;
-
+      let bStart=addDays(p.target,1), daysLeft=p.buffer;
       while(daysLeft>0){
-        const block=Math.min(7,daysLeft);
-        const bufferEnd=addDays(bufferStart,block-1);
-
+        const block=Math.min(7,daysLeft), bEnd=addDays(bStart,block-1);
         rows.push({
-          start:bufferStart,
-          end:bufferEnd,
-          type:"buffer",
-          dayCount:block,
+          start:bStart,end:bEnd,type:"buffer",dayCount:block,
           values:new Array(state.subjects.length).fill(0)
         });
-
-        bufferStart=addDays(bufferEnd,1);
+        bStart=addDays(bEnd,1);
         daysLeft-=block;
       }
     }
-
     return rows;
+  }
+
+  function calculateSubjectFinishDatesFromDaily(daily){
+    const need=state.subjects.map(s=>remLectures(s));
+    const done=new Array(state.subjects.length).fill(0);
+    const dates=new Array(state.subjects.length).fill(null);
+
+    daily.forEach(day=>{
+      day.values.forEach((v,i)=>{
+        if(dates[i]||need[i]===0)return;
+        done[i]+=v;
+        if(done[i]>=need[i])dates[i]=day.date;
+      });
+    });
+    return dates;
+  }
+
+  function calculateSubjectFinishDates(rows){
+    // Compatibility helper used by existing tables.
+    const p=planning();
+    return calculateSubjectFinishDatesFromDaily(buildDailyPlan(p));
   }
 
   function renderStats(p){
@@ -567,16 +918,55 @@ tbody tr{transition:background .18s ease}
 
   function renderNextWeek(rows){
     els.nextWeekTable.innerHTML="";
-    const first=rows[0];
-    state.subjects.forEach((s,i)=>{
+    const p=planning();
+    const daily=buildDailyPlan(p);
+    const next7=daily.slice(0,7);
+    const next7Totals=new Array(state.subjects.length).fill(0);
+    next7.forEach(day=>day.values.forEach((v,i)=>next7Totals[i]+=v));
+
+    const finishes=calculateSubjectFinishDatesFromDaily(daily);
+    const ordered=state.subjects.map((s,i)=>({s,i,p:Math.max(1,parseInt(s.priority)||i+1)}))
+      .sort((a,b)=>a.p-b.p||a.i-b.i);
+
+    ordered.forEach(({s,i,p})=>{
+      const total=Math.max(0,num(s.total)), current=clamp(num(s.completed),0,total), rem=remLectures(s);
       const tr=document.createElement("tr");
-      tr.innerHTML=`<td><strong>${escapeHtml(s.name||"Unnamed")}</strong></td>
-        <td class="muted">${escapeHtml(s.faculty||"—")}</td>
-        <td>${clamp(num(s.completed),0,num(s.total))}/${Math.max(0,num(s.total))}</td>
-        <td>${remLectures(s)}</td>
-        <td>${formatHours(durationHours(s))}</td>
-        <td class="total-cell">${first?first.values[i]:0}</td>`;
+      tr.innerHTML=`<td class="total-cell">${p}</td><td><strong>${escapeHtml(s.name||"Unnamed")}</strong></td>
+        <td class="muted">${escapeHtml(s.faculty||"—")}</td><td>${current}/${total}</td><td>${rem}</td>
+        <td>${formatHours(durationHours(s))}</td><td class="total-cell">${next7Totals[i]}</td>
+        <td>${rem===0?"Done":(finishes[i]?fmtShort(finishes[i]):"—")}</td>`;
       els.nextWeekTable.appendChild(tr);
+    });
+  }
+
+  function renderDailyPlanner(p){
+    const daily=buildDailyPlan(p);
+    els.dailyPlanner.innerHTML="";
+    const speed=clamp(num(state.playbackSpeed,1.5),1.1,2);
+
+    daily.slice(0,21).forEach(day=>{
+      const parts=[];
+      let total=0;
+      let contentHours=0;
+
+      day.values.forEach((v,i)=>{
+        if(v>0){
+          parts.push(`${escapeHtml(state.subjects[i].name||"Subject")} × ${v}`);
+          total+=v;
+          contentHours+=v*durationHours(state.subjects[i]);
+        }
+      });
+
+      const jsDay=new Date(toUTC(day.date)).getUTCDay();
+      const level=state.dayIntensity[String(jsDay)]||"Normal";
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><strong>${fmtShort(day.date)}</strong></td>
+        <td><span class="badge">${level}</span></td>
+        <td>${parts.length?parts.join(" + "):'<span class="muted">No lecture target</span>'}</td>
+        <td class="total-cell">${total}</td>
+        <td>${total?formatHours(contentHours/speed):"—"}</td>`;
+      els.dailyPlanner.appendChild(tr);
     });
   }
 
@@ -635,16 +1025,16 @@ tbody tr{transition:background .18s ease}
       <strong>${fmtLong(p.target)}</strong>. To finish on time, aim for about
       <strong>${p.daily.toFixed(1)} lectures/day</strong> or <strong>${Math.ceil(p.weekly)} per week</strong>.
       At <strong>${speed.toFixed(1)}×</strong>, your remaining video watch time is about <strong>${formatHours(watch)}</strong>.
-      Your immediate 7-day target is <strong>${firstTotal} lectures</strong>.${bufferText}`;
+      Your immediate 7-day target is <strong>${firstTotal} lectures</strong>. The planner creates a <strong>flexible daily load</strong> using your Easy / Normal / Hard weekday choices: Easy days stay lighter, while Hard days can take more lectures when needed. It still uses at most <strong>3 subjects in a day</strong>, while <strong>Finish Priority</strong> influences which subjects appear more often.${bufferText}`;
   }
 
   function renderPriority(){
     els.priorityChips.innerHTML="";
-    const ranked=state.subjects.map(s=>({name:s.name||"Unnamed",hours:remLectures(s)*durationHours(s),rem:remLectures(s)}))
-      .filter(x=>x.rem>0).sort((a,b)=>b.hours-a.hours).slice(0,3);
-    if(!ranked.length){els.priorityChips.innerHTML='<span class="chip">Nothing pending</span>';return}
-    ranked.forEach(x=>{
-      const chip=document.createElement("span");chip.className="chip";chip.textContent=`${x.name} • ${formatHours(x.hours)} left`;els.priorityChips.appendChild(chip)
+    const ordered=state.subjects.map((s,i)=>({name:s.name||"Unnamed",rem:remLectures(s),p:Math.max(1,parseInt(s.priority)||i+1)}))
+      .filter(x=>x.rem>0).sort((a,b)=>a.p-b.p).slice(0,4);
+    if(!ordered.length){els.priorityChips.innerHTML='<span class="chip">Nothing pending</span>';return}
+    ordered.forEach(x=>{
+      const c=document.createElement("span");c.className="chip";c.textContent=`#${x.p} ${x.name} • ${x.rem} left`;els.priorityChips.appendChild(c);
     });
   }
 
@@ -672,9 +1062,9 @@ tbody tr{transition:background .18s ease}
     const sevenEarlyPace=rem/sevenEarlyDays;
 
     const ranked=state.subjects
-      .map(s=>({name:s.name||"Unnamed",hours:remLectures(s)*durationHours(s)}))
-      .sort((a,b)=>b.hours-a.hours);
-    const biggest=ranked.find(x=>x.hours>0);
+      .map((s,i)=>({name:s.name||"Unnamed",hours:remLectures(s)*durationHours(s),rem:remLectures(s),p:Math.max(1,parseInt(s.priority)||i+1)}))
+      .filter(x=>x.rem>0).sort((a,b)=>a.p-b.p);
+    const biggest=ranked[0];
 
     let tips=[];
 
@@ -715,9 +1105,9 @@ tbody tr{transition:background .18s ease}
 
     if(biggest){
       tips.push({
-        k:"Priority",
-        title:`Protect time for ${biggest.name}`,
-        text:"It currently has the largest remaining lecture-hour load, so it needs the most consistent study slots."
+        k:"Your finish order",
+        title:`Finish ${biggest.name} first`,
+        text:"This subject gets the largest share of daily lecture slots because you ranked it first, while up to two other subjects continue alongside it."
       });
     }
 
@@ -758,7 +1148,8 @@ tbody tr{transition:background .18s ease}
     $("printMeta").innerHTML=`Target: <strong>${fmtLong(p.target)}</strong><br>
       Playback speed: <strong>${speed.toFixed(1)}×</strong><br>
       Safety buffer: <strong>${p.buffer} day${p.buffer===1?"":"s"}</strong><br>
-      Final fallback deadline: <strong>${fmtLong(p.finalDeadline)}</strong>`;
+      Final fallback deadline: <strong>${fmtLong(p.finalDeadline)}</strong><br>
+      Weekly intensity: <strong>Custom Easy / Normal / Hard</strong>`;
 
     $("pCompleted").textContent=`${done}/${total}`;
     $("pRemaining").textContent=rem;
@@ -775,6 +1166,22 @@ tbody tr{transition:background .18s ease}
     $("printNextWeek").innerHTML=state.subjects.map((s,i)=>{
       const t=Math.max(0,num(s.total)), c=clamp(num(s.completed),0,t), r=Math.max(0,t-c);
       return `<tr><td>${escapeHtml(s.name||"Unnamed")}</td><td>${c}/${t}</td><td>${r}</td><td>${first?first.values[i]:0}</td></tr>`;
+    }).join("");
+
+    const dailyPlan=buildDailyPlan(p);
+    $("printDaily").innerHTML=dailyPlan.slice(0,7).map(day=>{
+      const parts=[];
+      let total=0, contentHours=0;
+      day.values.forEach((v,i)=>{
+        if(v>0){
+          parts.push(`${escapeHtml(state.subjects[i].name||"Subject")} × ${v}`);
+          total+=v;
+          contentHours+=v*durationHours(state.subjects[i]);
+        }
+      });
+      const jsDay=new Date(toUTC(day.date)).getUTCDay();
+      const level=state.dayIntensity[String(jsDay)]||"Normal";
+      return `<tr><td>${fmtShort(day.date)}</td><td>${level}</td><td>${parts.join(" + ")||"—"}</td><td>${total}</td><td>${total?formatHours(contentHours/speed):"—"}</td></tr>`;
     }).join("");
 
     const headers=state.subjects.map(s=>`<th>${escapeHtml(s.name||"Subject")}</th>`).join("");
@@ -807,9 +1214,10 @@ tbody tr{transition:background .18s ease}
     els.playbackSpeed.value=String(state.playbackSpeed||1.5);
     els.bufferDays.value=String(state.bufferDays??7);
     els.heroTitle.textContent=(state.studentName?state.studentName+"'s ":"")+"CA Lecture Planner";
+    renderIntensity();
     renderSubjects();
     const p=planning(),rows=distributeWeeks(p);
-    renderStats(p);renderNextWeek(rows);renderWeekly(rows);renderPlanMessage(p,rows);renderPriority();renderSuggestions(p);
+    renderStats(p);renderNextWeek(rows);renderDailyPlanner(p);renderWeekly(rows);renderPlanMessage(p,rows);renderPriority();renderSuggestions(p);
     renderPrintSheet();
     pulseStats();
   }
@@ -834,7 +1242,7 @@ tbody tr{transition:background .18s ease}
     render();
   });
   $("addSubjectBtn").addEventListener("click",()=>{
-    state.subjects.push({id:uid(),name:"New Subject",faculty:"",total:0,completed:0,hours:2,minutes:30});save();render();
+    state.subjects.push({id:uid(),name:"New Subject",faculty:"",total:0,completed:0,hours:2,minutes:30,priority:state.subjects.length+1});save();render();
     setTimeout(()=>window.scrollTo({top:document.body.scrollHeight/3,behavior:"smooth"}),50);
   });
   $("printBtn").addEventListener("click",()=>{
@@ -851,7 +1259,12 @@ tbody tr{transition:background .18s ease}
     const f=els.restoreFile.files[0];if(!f)return;const r=new FileReader();
     r.onload=()=>{try{
       const obj=JSON.parse(r.result),p=obj.planner||obj;if(!p||!Array.isArray(p.subjects))throw new Error();
-      state=p;state.subjects=state.subjects.map(s=>({...s,id:s.id||uid()}));save();render();alert("Planner restored successfully.");
+      state=p;
+      if(!state.dayIntensity || typeof state.dayIntensity!=="object"){
+        state.dayIntensity={"0":"Easy","1":"Normal","2":"Normal","3":"Normal","4":"Normal","5":"Hard","6":"Normal"};
+      }
+      state.subjects=state.subjects.map((s,i)=>({...s,id:s.id||uid(),priority:Math.max(1,parseInt(s.priority)||i+1)}));
+      save();render();alert("Planner restored successfully.");
     }catch(e){alert("That backup file is not valid.")}els.restoreFile.value=""};
     r.readAsText(f);
   });
